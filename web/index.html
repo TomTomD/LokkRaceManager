@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>LöKKs lopp</title>
+        <style>
+            .output tr:nth-child(even) {
+                background-color: #f2f2f2;
+            }
+        </style>
+    </head>
+<body>
+
+<h1>LöKKs lopp</h1>
+
+<h2>Select or enter the competition name:</h2>
+
+<select id="competitionNameDropdown" name="competitionNameDropdown">
+    <option value="varregattan-2024-2024">Varregattan 2024</option>
+    <option value="hstregatta-2023">Höstregatta 2023</option>
+    <!-- Add more options as needed -->
+</select>
+<input type="text" id="competitionNameInput" name="competitionNameInput">
+<button onclick="fetchData()">Hämta</button>
+
+<h2 id="header">Ingen tävling hämtad</h2>
+
+<table id="output" class="output">
+    <tr>
+        <th>Lopp</th>
+        <th>Tid</th>
+        <th>Bana</th>
+        <th>Namn</th>
+        <th>Distans</th>
+    </tr>
+</table>
+
+<script>
+    function fetchData() {
+        // Clear the table first
+        let outputTable = document.getElementById("output");
+        for(let i = outputTable.rows.length - 1; i > 0; i--)
+        {
+            outputTable.deleteRow(i);
+        }
+    
+        let competitionNameDropdown = document.getElementById("competitionNameDropdown").value;
+        let competitionNameInput = document.getElementById("competitionNameInput").value;
+    
+        // Use the input from the text box if it's not empty, otherwise use the dropdown value
+        let competitionName = competitionNameInput ? competitionNameInput : competitionNameDropdown;
+    
+        const main_url = "https://se.racemanager.net/api/page/competitions/" + competitionName;
+        const wanted_club = "Lödde";
+
+        document.getElementById("header").innerText = "Hämtar data...";
+
+        let allData = [];
+    
+        fetch(main_url)
+            .then(response => response.json())
+            .then(data => {
+                let promises = data.races.map(race => {
+                    return fetch(race.url)
+                        .then(response => response.json())
+                        .then(race_data => {
+                            if (race_data.lanes) {
+                                for (let lane of race_data.lanes) {
+                                    let club = lane.club;
+                                    if (club && club.includes(wanted_club)) {
+                                        allData.push({
+                                            time: race_data.time,
+                                            race: race_data.race,
+                                            lane: lane.lane,
+                                            name: lane.name,
+                                            distance: race_data.distance
+                                        });
+                                    }
+                                }
+                            }
+                        });
+                });
+    
+                Promise.all(promises).then(() => {
+                    // Sort allData based on the race value
+                    allData.sort((a, b) => a.race - b.race);
+    
+                    // Display the sorted data in the table
+                    for (let data of allData) {
+                        // Create a new row
+                        let row = outputTable.insertRow(-1);
+                        // Insert cells and add the text
+                        row.insertCell(0).innerText = data.race;
+                        row.insertCell(1).innerText = data.time;
+                        row.insertCell(2).innerHTML = '<div style="text-align:center">' + data.lane + '</div>';
+                        row.insertCell(3).innerText = data.name;
+                        row.insertCell(4).innerText = data.distance;
+                    }
+                    document.getElementById("header").innerText = data.title;
+                });
+
+            })
+            .catch(error => console.error('Error:', error));
+    }
+    </script>
+
+</body>
+</html>
