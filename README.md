@@ -1,2 +1,2 @@
 # LokkRaceManager
-Using racemanager to list athletes form Lödde KanotKlubb
+Using [racemanager](https://se.racemanager.net) to list athletes from Lödde KanotKlubb
