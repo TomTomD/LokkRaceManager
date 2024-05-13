@@ -69,6 +69,7 @@ Enkel sida som hämtar data från <a href="https://se.racemanager.net">Racemanag
                             .then(response => response.json())
                             .then(race_data => {
                                 if (race_data.lanes) {
+                                    let position = 1;
                                     for (let lane of race_data.lanes) {
                                         let club = lane.club;
                                         if (club && club.includes(wanted_club)) {
@@ -79,9 +80,10 @@ Enkel sida som hämtar data från <a href="https://se.racemanager.net">Racemanag
                                                 name: lane.name,
                                                 distance: race_data.distance,
                                                 title: race_data.title,
-                                                result: lane.result + " " + lane.status 
+                                                result: position + " (" + lane.result + ") " + lane.status 
                                             });
                                         }
+                                        position++;
                                     }
                                 }
                                 document.getElementById("header").innerText += '.';
