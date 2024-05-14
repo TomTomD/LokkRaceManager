@@ -117,6 +117,7 @@
                                             club: lane.club,
                                             time: race_data.time,
                                             race: race_data.race,
+                                            race_id: race_data.raceID,
                                             lane: lane.lane,
                                             name: lane.name,
                                             distance: race_data.distance,
@@ -168,7 +169,7 @@
                 // Create a new row
                 let row = outputTable.insertRow(-1);
                 // Insert cells and add the text
-                row.insertCell(0).innerText = data.race;
+                row.insertCell(0).innerHTML = '<a href="https://se.racemanager.net/results/competition/result/heat/' + data.race_id + '" target="_blank">' + data.race + '</a>';
                 row.insertCell(1).innerText = data.time;
                 row.insertCell(2).innerHTML = '<div style="text-align:center">' + data.lane + '</div>';
                 row.insertCell(3).innerText = data.name;
