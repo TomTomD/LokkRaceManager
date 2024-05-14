@@ -6,25 +6,56 @@
             .output tr:nth-child(even) {
                 background-color: #f2f2f2;
             }
+            body {
+                position: relative;
+                min-height: 100vh;
+                margin: 0;
+            }
+            header {
+                background-color: #fffb00;
+                text-align: center;
+            }
+            footer {
+                position: absolute;
+                bottom: 0;
+                width: 100%;
+                background-color: #f3f186;
+                padding: 20px;
+                text-align: center;
+            }            
         </style>
     </head>
 <body>
-
+<header>
 <h1>LöKKs lopp</h1>
 
-Enkel sida som hämtar data från <a href="https://se.racemanager.net">Racemanager</a> och skapar en lista med de lopp <a href="https://www.loddekanot.nu/">LöKKs</a> atleter kör.
+<p>Enkel sida som hämtar data från <a href="https://se.racemanager.net">Racemanager</a> och skapar en lista med de lopp <a href="https://www.loddekanot.nu/">LöKKs</a> atleter kör.</p>
 
-<h2>Select or enter the competition name:</h2>
+</header>
+
+<h2>Välj tävling och hämta data:</h2>
 
 <select id="competitionNameDropdown" name="competitionNameDropdown">
     <option value="varregattan-2024-2024">Vårregattan 2024</option>
     <option value="hstregatta-2023">Höstregatta 2023</option>
     <!-- Add more options as needed -->
 </select>
-<input type="text" id="competitionNameInput" name="competitionNameInput">
+<input type="text" id="competitionNameInput" name="competitionNameInput" hidden="True">
 <button onclick="fetchData()">Hämta</button>
 
 <h2 id="header">Ingen tävling hämtad</h2>
+
+<table>
+    <tr>
+        <th>Klubb</th>
+        <th>Atlet</th>
+    </tr>
+    <tr>
+        <td><input type="text" id="wantedClubInput" name="wantedClubInput" value="Lödde"></td>
+        <td><input type="text" id="wantedAthleteInput" name="wantedAthleteInput" value=""></td>
+        <td><button onclick="printList()">Filtrera</button></td>
+    </tr>
+</table>
 
 <table id="output" class="output">
     <tr>
@@ -38,7 +69,14 @@ Enkel sida som hämtar data från <a href="https://se.racemanager.net">Racemanag
     </tr>
 </table>
 
+<footer>
+    <p>Copyright (c) 2024 Tom Dahlberg - <a href="https://github.com/TomTomD/LokkRaceManager/blob/main/LICENSE">MIT License</a><br>
+    Source on <a href="https://github.com/TomTomD/LokkRaceManager">GitHub</a></p>
+</footer>
+
 <script>
+    let allData = [];
+
     function fetchData() {
         // Clear the table first
         let outputTable = document.getElementById("output");
@@ -46,6 +84,8 @@ Enkel sida som hämtar data från <a href="https://se.racemanager.net">Racemanag
         {
             outputTable.deleteRow(i);
         }
+
+        allData.length = 0;
     
         let competitionNameDropdown = document.getElementById("competitionNameDropdown").value;
         let competitionNameInput = document.getElementById("competitionNameInput").value;
@@ -54,11 +94,8 @@ Enkel sida som hämtar data från <a href="https://se.racemanager.net">Racemanag
         let competitionName = competitionNameInput ? competitionNameInput : competitionNameDropdown;
     
         const main_url = "https://se.racemanager.net/api/page/competitions/" + competitionName;
-        const wanted_club = "Lödde";
 
         document.getElementById("header").innerText = "Hämtar data...";
-
-        let allData = [];
     
         fetch(main_url)
             .then(response => response.json())
@@ -71,18 +108,21 @@ Enkel sida som hämtar data från <a href="https://se.racemanager.net">Racemanag
                                 if (race_data.lanes) {
                                     let position = 1;
                                     for (let lane of race_data.lanes) {
-                                        let club = lane.club;
-                                        if (club && club.includes(wanted_club)) {
-                                            allData.push({
-                                                time: race_data.time,
-                                                race: race_data.race,
-                                                lane: lane.lane,
-                                                name: lane.name,
-                                                distance: race_data.distance,
-                                                title: race_data.title,
-                                                result: position + " (" + lane.result + ") " + lane.status 
-                                            });
+                                        let result_string = "-----";
+                                        if (race_data.status == "Official") {
+                                            result_string = position + " (" + lane.result + ") " + lane.status;
                                         }
+
+                                        allData.push({
+                                            club: lane.club,
+                                            time: race_data.time,
+                                            race: race_data.race,
+                                            lane: lane.lane,
+                                            name: lane.name,
+                                            distance: race_data.distance,
+                                            title: race_data.title,
+                                            result: result_string
+                                        });
                                         position++;
                                     }
                                 }
@@ -94,29 +134,49 @@ Enkel sida som hämtar data från <a href="https://se.racemanager.net">Racemanag
                         // Sort allData based on the race value
                         allData.sort((a, b) => a.race - b.race);
         
-                        // Display the sorted data in the table
-                        for (let data of allData) {
-                            // Create a new row
-                            let row = outputTable.insertRow(-1);
-                            // Insert cells and add the text
-                            row.insertCell(0).innerText = data.race;
-                            row.insertCell(1).innerText = data.time;
-                            row.insertCell(2).innerHTML = '<div style="text-align:center">' + data.lane + '</div>';
-                            row.insertCell(3).innerText = data.name;
-                            row.insertCell(4).innerText = data.distance;
-                            row.insertCell(5).innerText = data.title;
-                            row.insertCell(6).innerText = data.result;
-                        }
                         document.getElementById("header").innerText = data.title;
+                        printList();
                     });
                 } else {
-                    let row = outputTable.insertRow(-1);
-                    row.insertCell(0).innerText = "INGA LOPP"
                     document.getElementById("header").innerText = data.title;
+                    printList();
                 }
 
             })
             .catch(error => console.error('Error:', error));
+    }
+
+    function printList() {
+        // Clear the table first
+        let outputTable = document.getElementById("output");
+        let wanted_club = document.getElementById("wantedClubInput").value;
+        let wanted_athlete = document.getElementById("wantedAthleteInput").value;
+        for(let i = outputTable.rows.length - 1; i > 0; i--)
+        {
+            outputTable.deleteRow(i);
+        }
+
+        if (allData.length == 0) {
+            let row = outputTable.insertRow(-1);
+            row.insertCell(0).innerText = "INGA LOPP"
+        }
+
+        for (let data of allData) {
+            let club = data.club;
+            let name = data.name;
+            if (club && club.includes(wanted_club) && name.includes(wanted_athlete)) {
+                // Create a new row
+                let row = outputTable.insertRow(-1);
+                // Insert cells and add the text
+                row.insertCell(0).innerText = data.race;
+                row.insertCell(1).innerText = data.time;
+                row.insertCell(2).innerHTML = '<div style="text-align:center">' + data.lane + '</div>';
+                row.insertCell(3).innerText = data.name;
+                row.insertCell(4).innerText = data.distance;
+                row.insertCell(5).innerText = data.title;
+                row.insertCell(6).innerText = data.result;
+            }
+        }   
     }
     </script>
 
