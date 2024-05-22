@@ -98,53 +98,50 @@
         document.getElementById("header").innerText = "Hämtar data...";
     
         fetch(main_url)
-            .then(response => response.json())
-            .then(data => {
-                if (data.races) {
-                    let promises = data.races.map(race => {
-                        return fetch(race.url)
-                            .then(response => response.json())
-                            .then(race_data => {
-                                if (race_data.lanes) {
-                                    let position = 1;
-                                    for (let lane of race_data.lanes) {
-                                        let result_string = "-----";
-                                        if (race_data.status == "Official") {
-                                            result_string = position + " (" + lane.result + ") " + lane.status;
-                                        }
-
-                                        allData.push({
-                                            club: lane.club,
-                                            time: race_data.time,
-                                            race: race_data.race,
-                                            race_id: race_data.raceID,
-                                            lane: lane.lane,
-                                            name: lane.name,
-                                            distance: race_data.distance,
-                                            title: race_data.title,
-                                            result: result_string
-                                        });
-                                        position++;
+        .then(response => response.json())
+        .then(async data => {
+            if (data.races) {
+                for (let race of data.races) {
+                    await fetch(race.url)
+                        .then(response => response.json())
+                        .then(race_data => {
+                            if (race_data.lanes) {
+                                let position = 1;
+                                for (let lane of race_data.lanes) {
+                                    let result_string = "-----";
+                                    if (race_data.status == "Official") {
+                                        result_string = position + " (" + lane.result + ") " + lane.status;
                                     }
+
+                                    allData.push({
+                                        club: lane.club,
+                                        time: race_data.time,
+                                        race: race_data.race,
+                                        race_id: race_data.raceID,
+                                        lane: lane.lane,
+                                        name: lane.name,
+                                        distance: race_data.distance,
+                                        title: race_data.title,
+                                        result: result_string
+                                    });
+                                    position++;
                                 }
-                                document.getElementById("header").innerText += '.';
-                            });
-                    });
-    
-                    Promise.all(promises).then(() => {
-                        // Sort allData based on the race value
-                        allData.sort((a, b) => a.race - b.race);
-        
-                        document.getElementById("header").innerText = data.title;
-                        printList();
-                    });
-                } else {
-                    document.getElementById("header").innerText = data.title;
-                    printList();
+                            }
+                            document.getElementById("header").innerText += '.';
+                        });
                 }
 
-            })
-            .catch(error => console.error('Error:', error));
+                // Sort allData based on the race value
+                allData.sort((a, b) => a.race - b.race);
+
+                document.getElementById("header").innerText = data.title;
+                printList();
+            } else {
+                document.getElementById("header").innerText = data.title;
+                printList();
+            }
+        })
+        .catch(error => console.error('Error:', error));
     }
 
     function printList() {
