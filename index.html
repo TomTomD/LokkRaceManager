@@ -101,10 +101,15 @@
         .then(response => response.json())
         .then(async data => {
             if (data.races) {
+                let numberOfRaces = data.races.length;
+                let fetchCount = 0;
                 for (let race of data.races) {
                     await fetch(race.url)
                         .then(response => response.json())
                         .then(race_data => {
+                            fetchCount++;
+                            document.getElementById("header").innerText = "Hämtar data (" + fetchCount + "/" + numberOfRaces + ")";
+
                             if (race_data.lanes) {
                                 let position = 1;
                                 for (let lane of race_data.lanes) {
@@ -113,17 +118,37 @@
                                         result_string = position + " (" + lane.result + ") " + lane.status;
                                     }
 
-                                    allData.push({
-                                        club: lane.club,
-                                        time: race_data.time,
-                                        race: race_data.race,
-                                        race_id: race_data.raceID,
-                                        lane: lane.lane,
-                                        name: lane.name,
-                                        distance: race_data.distance,
-                                        title: race_data.title,
-                                        result: result_string
-                                    });
+                                    if (lane.team) {
+                                        // K2 or K4 race
+                                        for (let athlete of lane.team) {
+                                          allData.push({
+                                            club: athlete.club,
+                                            time: race_data.time,
+                                            race: race_data.race,
+                                            race_id: race_data.raceID,
+                                            lane: lane.lane,
+                                            name: athlete.athlete,
+                                            distance: race_data.distance,
+                                            title: race_data.title,
+                                            result: result_string
+                                          });                      
+                                        }
+
+                                    } else {
+                                      // K1 race.
+
+                                      allData.push({
+                                          club: lane.club,
+                                          time: race_data.time,
+                                          race: race_data.race,
+                                          race_id: race_data.raceID,
+                                          lane: lane.lane,
+                                          name: lane.name,
+                                          distance: race_data.distance,
+                                          title: race_data.title,
+                                          result: result_string
+                                      });
+                                    }
                                     position++;
                                 }
                             }
