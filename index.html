@@ -15,22 +15,14 @@
                 background-color: #fffb00;
                 text-align: center;
             }
-            footer {
-                position: absolute;
-                bottom: 0;
-                width: 100%;
-                background-color: #f3f186;
-                padding: 20px;
-                text-align: center;
-            }            
         </style>
     </head>
 <body>
 <header>
 <h1>LöKKs lopp</h1>
-
 <p>Enkel sida som hämtar data från <a href="https://se.racemanager.net">Racemanager</a> och skapar en lista med de lopp <a href="https://www.loddekanot.nu/">LöKKs</a> atleter kör.</p>
-
+<p>Copyright (c) 2024 Tom Dahlberg - <a href="https://github.com/TomTomD/LokkRaceManager/blob/main/LICENSE">MIT License</a>
+    Source on <a href="https://github.com/TomTomD/LokkRaceManager">GitHub</a></p>
 </header>
 
 <h2>Välj tävling och hämta data:</h2>
@@ -62,6 +54,7 @@
 <table id="output" class="output">
     <tr>
         <th>Lopp</th>
+        <th>Dag</th>
         <th>Tid</th>
         <th>Bana</th>
         <th>Namn</th>
@@ -70,11 +63,6 @@
         <th>Resultat</th>
     </tr>
 </table>
-
-<footer>
-    <p>Copyright (c) 2024 Tom Dahlberg - <a href="https://github.com/TomTomD/LokkRaceManager/blob/main/LICENSE">MIT License</a><br>
-    Source on <a href="https://github.com/TomTomD/LokkRaceManager">GitHub</a></p>
-</footer>
 
 <script>
     let allData = [];
@@ -126,6 +114,8 @@
                                           allData.push({
                                             club: athlete.club,
                                             time: race_data.time,
+                                            day: race_data.day,
+                                            date: race_data.date,
                                             race: race_data.race,
                                             race_id: race_data.raceID,
                                             lane: lane.lane,
@@ -142,6 +132,8 @@
                                       allData.push({
                                           club: lane.club,
                                           time: race_data.time,
+                                          day: race_data.day,
+                                          date: race_data.date,
                                           race: race_data.race,
                                           race_id: race_data.raceID,
                                           lane: lane.lane,
@@ -153,6 +145,20 @@
                                     }
                                     position++;
                                 }
+                            } else if (race_data.status != "Norace") {
+                                // Probably a final not set yet.
+                                allData.push({
+                                          time: race_data.time,
+                                          day: race_data.day,
+                                          date: race_data.date,
+                                          race: race_data.race,
+                                          race_id: race_data.raceID,
+                                          distance: race_data.distance,
+                                          title: race_data.title,
+                                          name: "---",
+                                          club: null,
+                                          result: "",
+                                      });
                             }
                             document.getElementById("header").innerText += '.';
                         });
@@ -176,6 +182,7 @@
         let outputTable = document.getElementById("output");
         let wanted_club = document.getElementById("wantedClubInput").value;
         let wanted_athlete = document.getElementById("wantedAthleteInput").value;
+        let distance_set = new Set();
         for(let i = outputTable.rows.length - 1; i > 0; i--)
         {
             outputTable.deleteRow(i);
@@ -194,13 +201,28 @@
                 let row = outputTable.insertRow(-1);
                 // Insert cells and add the text
                 row.insertCell(0).innerHTML = '<a href="https://se.racemanager.net/results/competition/result/heat/' + data.race_id + '" target="_blank">' + data.race + '</a>';
-                row.insertCell(1).innerText = data.time;
-                row.insertCell(2).innerHTML = '<div style="text-align:center">' + data.lane + '</div>';
-                row.insertCell(3).innerText = data.name;
-                row.insertCell(4).innerText = data.distance;
-                row.insertCell(5).innerText = data.title;
-                row.insertCell(6).innerText = data.result;
+                row.insertCell(1).innerText = data.day;
+                row.insertCell(2).innerText = data.time;
+                row.insertCell(3).innerHTML = '<div style="text-align:center">' + data.lane + '</div>';
+                row.insertCell(4).innerText = data.name;
+                row.insertCell(5).innerText = data.distance;
+                row.insertCell(6).innerText = data.title;
+                row.insertCell(7).innerText = data.result;
+                distance_set.add(data.distance);
+            } else if (club == null && distance_set.has(data.distance)) {
+                // Create a new row
+                let row = outputTable.insertRow(-1);
+                // Insert cells and add the text
+                row.insertCell(0).innerHTML = '<a href="https://se.racemanager.net/results/competition/result/heat/' + data.race_id + '" target="_blank">' + data.race + '</a>';
+                row.insertCell(1).innerText = data.day;
+                row.insertCell(2).innerText = data.time;
+                row.insertCell(3).innerText = "";
+                row.insertCell(4).innerText = data.name;
+                row.insertCell(5).innerText = data.distance;
+                row.insertCell(6).innerText = data.title;
+                row.insertCell(7).innerText = data.result;
             }
+
         }   
     }
     </script>
