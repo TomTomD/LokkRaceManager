@@ -141,7 +141,7 @@
                         let numberOfRaces = data.races.length;
                         let fetchCount = 0;
                         for (let race of data.races) {
-                            const race_url = "https://se.racemanager.net/api/page/" + race.raceID;
+                            const race_url = "https://se.racemanager.net/api/page/" + race.raceId;
                             await fetch(race_url)
                                 .then(response => response.json())
                                 .then(race_data => {
@@ -170,7 +170,7 @@
         function allRacesToAllData() {
             allData.length = 0;
             for (let race_data of allRaces) {
-                if (race_data.lanes) {
+                if (race_data.lanes && race_data.lanes.length > 0) {
                     let position = 1;
                     for (let lane of race_data.lanes) {
                         let result_string = "-----";
