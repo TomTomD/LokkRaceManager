@@ -1,231 +1,293 @@
 <!DOCTYPE html>
 <html>
-    <head>
-        <title>LöKKs lopp</title>
-        <style>
-            .output tr:nth-child(even) {
-                background-color: #f2f2f2;
-            }
-            body {
-                position: relative;
-                min-height: 100vh;
-                margin: 0;
-            }
-            header {
-                background-color: #fffb00;
-                text-align: center;
-            }
-        </style>
-    </head>
-<body>
-<header>
-<h1>LöKKs lopp</h1>
-<p>Enkel sida som hämtar data från <a href="https://se.racemanager.net">Racemanager</a> och skapar en lista med de lopp <a href="https://www.loddekanot.nu/">LöKKs</a> atleter kör.</p>
-<p>Copyright (c) 2024 Tom Dahlberg - <a href="https://github.com/TomTomD/LokkRaceManager/blob/main/LICENSE">MIT License</a>
-    Source on <a href="https://github.com/TomTomD/LokkRaceManager">GitHub</a></p>
-</header>
 
-<h2>Välj tävling och hämta data:</h2>
-
-<select id="competitionNameDropdown" name="competitionNameDropdown">
-    <option value="sprint-sm-2024">Sprint SM 2024</option>
-    <option value="tolvenregattan-2024">Tolvenregattan 2024</option>
-    <option value="varregattan-2024-2024">Vårregattan 2024</option>
-    <option value="hstregatta-2023">Höstregatta 2023</option>
-    <!-- Add more options as needed -->
-</select>
-<input type="text" id="competitionNameInput" name="competitionNameInput" hidden="True">
-<button onclick="fetchData()">Hämta</button>
-
-<h2 id="header">Ingen tävling hämtad</h2>
-
-<table>
-    <tr>
-        <th>Klubb</th>
-        <th>Atlet</th>
-    </tr>
-    <tr>
-        <td><input type="text" id="wantedClubInput" name="wantedClubInput" value="Lödde"></td>
-        <td><input type="text" id="wantedAthleteInput" name="wantedAthleteInput" value=""></td>
-        <td><button onclick="printList()">Filtrera</button></td>
-    </tr>
-</table>
-
-<table id="output" class="output">
-    <tr>
-        <th>Lopp</th>
-        <th>Dag</th>
-        <th>Tid</th>
-        <th>Bana</th>
-        <th>Namn</th>
-        <th>Distans</th>
-        <th>Typ</th>
-        <th>Resultat</th>
-    </tr>
-</table>
-
-<script>
-    let allData = [];
-
-    function fetchData() {
-        // Clear the table first
-        let outputTable = document.getElementById("output");
-        for(let i = outputTable.rows.length - 1; i > 0; i--)
-        {
-            outputTable.deleteRow(i);
+<head>
+    <title>LöKKs lopp</title>
+    <style>
+        .output tr:nth-child(even) {
+            background-color: #f2f2f2;
         }
 
-        allData.length = 0;
-    
-        let competitionNameDropdown = document.getElementById("competitionNameDropdown").value;
-        let competitionNameInput = document.getElementById("competitionNameInput").value;
-    
-        // Use the input from the text box if it's not empty, otherwise use the dropdown value
-        let competitionName = competitionNameInput ? competitionNameInput : competitionNameDropdown;
-    
-        const main_url = "https://se.racemanager.net/api/page/competitions/" + competitionName;
+        body {
+            position: relative;
+            min-height: 100vh;
+            margin: 0;
+        }
 
-        document.getElementById("header").innerText = "Hämtar data...";
-    
-        fetch(main_url)
-        .then(response => response.json())
-        .then(async data => {
-            if (data.races) {
-                let numberOfRaces = data.races.length;
-                let fetchCount = 0;
-                for (let race of data.races) {
-                    await fetch(race.url)
+        header {
+            background-color: #fffb00;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body onload="pageLoading()">
+    <header>
+        <h1>LöKKs lopp</h1>
+        <p>Enkel sida som hämtar data från <a href="https://se.racemanager.net">Racemanager</a> och skapar en lista med
+            de lopp <a href="https://www.loddekanot.nu/">LöKKs</a> atleter kör.</p>
+        <p>Copyright (c) 2024 Tom Dahlberg - <a href="https://github.com/TomTomD/LokkRaceManager/blob/main/LICENSE">MIT
+                License</a>
+            Source on <a href="https://github.com/TomTomD/LokkRaceManager">GitHub</a></p>
+    </header>
+
+    <h2>Välj tävling och hämta data:</h2>
+
+    <select id="competitionNameDropdown" name="competitionNameDropdown">
+        <option value="sprint-sm-2024">Sprint SM 2024</option>
+        <option value="tolvenregattan-2024">Tolvenregattan 2024</option>
+        <option value="varregattan-2024-2024">Vårregattan 2024</option>
+        <option value="hstregatta-2023">Höstregatta 2023</option>
+        <!-- Add more options as needed -->
+    </select>
+    <input type="text" id="competitionNameInput" name="competitionNameInput" hidden="True">
+    <button onclick="fetchData()">Hämta</button> Laddar ner hela tävlingen.
+    <p><button onclick="updateFetchData()">Hämta lite</button> Hämtar de 20 lopp räknat från det sista lopp som är markerat som klart. </p>
+ 
+    <h2 id="header">Ingen tävling hämtad</h2>
+
+
+    <table>
+        <tr>
+            <th>Klubb</th>
+            <th>Atlet</th>
+        </tr>
+        <tr>
+            <td><input type="text" id="wantedClubInput" name="wantedClubInput" value="Lödde"></td>
+            <td><input type="text" id="wantedAthleteInput" name="wantedAthleteInput" value=""></td>
+            <td><button onclick="printList()">Filtrera</button></td>
+        </tr>
+    </table>
+
+    <table id="output" class="output">
+        <tr>
+            <th>Lopp</th>
+            <th>Dag</th>
+            <th>Tid</th>
+            <th>Bana</th>
+            <th>Namn</th>
+            <th>Distans</th>
+            <th>Typ</th>
+            <th>Resultat</th>
+        </tr>
+    </table>
+
+    <script>
+        let allRaces = [];
+        let allData = [];
+
+        function pageLoading() {
+            const storedRaces = localStorage.getItem("allRaces")
+            if (storedRaces != null) {
+                allRaces = JSON.parse(storedRaces);
+                document.getElementById("header").innerText = allRaces[0].competition;
+                allRacesToAllData();
+                printList();
+            }
+
+        }
+
+        function updateFetchData() {
+            let updatedRaces = 0;
+            for (const [index, race_data] of allRaces.entries()) {
+                if ((race_data.status.toLowerCase() != "official") &&
+                    (race_data.status.toLowerCase() != "norace")) {
+                    document.getElementById("header").innerText = "Hämtar lopp " + race_data.race;
+                    const race_url = "https://se.racemanager.net/api/page/" + race_data.raceID;
+                    fetch(race_url)
                         .then(response => response.json())
-                        .then(race_data => {
-                            fetchCount++;
-                            document.getElementById("header").innerText = "Hämtar data (" + fetchCount + "/" + numberOfRaces + ")";
+                        .then(async new_race_data => {
+                            allRaces[index] = new_race_data;
+                        })
+                        .catch(error => console.error('Error:', error));
+                    updatedRaces++;
+                    if(updatedRaces > 20) {
+                        break;
+                    }
 
-                            if (race_data.lanes) {
-                                let position = 1;
-                                for (let lane of race_data.lanes) {
-                                    let result_string = "-----";
-                                    if (race_data.status == "Official") {
-                                        result_string = position + " (" + lane.result + ") " + lane.status;
-                                    }
+                }
+            }
+            
+            allRacesToAllData();
+            printList();
+            localStorage.setItem("allRaces", JSON.stringify(allRaces));
 
-                                    if (lane.team) {
-                                        // K2 or K4 race
-                                        for (let athlete of lane.team) {
-                                          allData.push({
-                                            club: athlete.club,
-                                            time: race_data.time,
-                                            day: race_data.day,
-                                            date: race_data.date,
-                                            race: race_data.race,
-                                            race_id: race_data.raceID,
-                                            lane: lane.lane,
-                                            name: athlete.athlete,
-                                            distance: race_data.distance,
-                                            title: race_data.title,
-                                            result: result_string
-                                          });                      
-                                        }
+        }
 
-                                    } else {
-                                      // K1 race.
+        function fetchData() {
+            // Clear the table first
+            let outputTable = document.getElementById("output");
+            for (let i = outputTable.rows.length - 1; i > 0; i--) {
+                outputTable.deleteRow(i);
+            }
 
-                                      allData.push({
-                                          club: lane.club,
-                                          time: race_data.time,
-                                          day: race_data.day,
-                                          date: race_data.date,
-                                          race: race_data.race,
-                                          race_id: race_data.raceID,
-                                          lane: lane.lane,
-                                          name: lane.name,
-                                          distance: race_data.distance,
-                                          title: race_data.title,
-                                          result: result_string
-                                      });
-                                    }
-                                    position++;
-                                }
-                            } else if (race_data.status != "Norace") {
-                                // Probably a final not set yet.
-                                allData.push({
-                                          time: race_data.time,
-                                          day: race_data.day,
-                                          date: race_data.date,
-                                          race: race_data.race,
-                                          race_id: race_data.raceID,
-                                          distance: race_data.distance,
-                                          title: race_data.title,
-                                          name: "---",
-                                          club: null,
-                                          result: "",
-                                      });
+            allData.length = 0;
+            allRaces.length = 0;
+
+            let competitionNameDropdown = document.getElementById("competitionNameDropdown").value;
+            let competitionNameInput = document.getElementById("competitionNameInput").value;
+
+            // Use the input from the text box if it's not empty, otherwise use the dropdown value
+            let competitionName = competitionNameInput ? competitionNameInput : competitionNameDropdown;
+
+            const main_url = "https://se.racemanager.net/api/page/competitions/" + competitionName;
+
+            document.getElementById("header").innerText = "Hämtar data...";
+
+            fetch(main_url)
+                .then(response => response.json())
+                .then(async data => {
+                    if (data.races) {
+                        let numberOfRaces = data.races.length;
+                        let fetchCount = 0;
+                        for (let race of data.races) {
+                            const race_url = "https://se.racemanager.net/api/page/" + race.raceID;
+                            await fetch(race_url)
+                                .then(response => response.json())
+                                .then(race_data => {
+                                    fetchCount++;
+                                    document.getElementById("header").innerText = "Hämtar data (" + fetchCount + "/" + numberOfRaces + ")";
+                                    allRaces.push(race_data);
+
+                                });
+                        }
+
+                        // Sort allRaces based on the race value
+                        allRaces.sort((a, b) => a.race - b.race);
+                        allRacesToAllData();
+
+                        document.getElementById("header").innerText = data.title;
+                        localStorage.setItem("allRaces", JSON.stringify(allRaces));
+                        printList();
+                    } else {
+                        document.getElementById("header").innerText = data.title;
+                        printList();
+                    }
+                })
+                .catch(error => console.error('Error:', error));
+        }
+
+        function allRacesToAllData() {
+            allData.length = 0;
+            for (let race_data of allRaces) {
+                if (race_data.lanes) {
+                    let position = 1;
+                    for (let lane of race_data.lanes) {
+                        let result_string = "-----";
+                        if (race_data.status.toLowerCase() == "official") {
+                            result_string = position + " (" + lane.result + ") ";
+                            if (lane.status) {
+                                result_string += lane.status;
                             }
-                            document.getElementById("header").innerText += '.';
-                        });
+                        }
+
+                        if (lane.team) {
+                            // K2 or K4 race
+                            for (let athlete of lane.team) {
+                                allData.push({
+                                    club: athlete.club,
+                                    time: race_data.time,
+                                    day: race_data.day,
+                                    date: race_data.date,
+                                    race: race_data.race,
+                                    race_id: race_data.raceID,
+                                    lane: lane.lane,
+                                    name: athlete.firstName + " " + athlete.lastName,
+                                    distance: race_data.distance,
+                                    title: race_data.title,
+                                    result: result_string
+                                });
+                            }
+
+                        } else {
+                            // K1 race.
+
+                            allData.push({
+                                club: lane.club,
+                                time: race_data.time,
+                                day: race_data.day,
+                                date: race_data.date,
+                                race: race_data.race,
+                                race_id: race_data.raceID,
+                                lane: lane.lane,
+                                name: lane.name.firstName + " " + lane.name.lastName,
+                                distance: race_data.distance,
+                                title: race_data.title,
+                                result: result_string
+                            });
+                        }
+                        position++;
+                    }
+                } else if (race_data.status.toLowerCase() != "norace") {
+                    // Probably a final not set yet.
+                    allData.push({
+                        time: race_data.time,
+                        day: race_data.day,
+                        date: race_data.date,
+                        race: race_data.race,
+                        race_id: race_data.raceID,
+                        distance: race_data.distance,
+                        title: race_data.title,
+                        name: "---",
+                        club: null,
+                        result: "",
+                    });
                 }
 
-                // Sort allData based on the race value
-                allData.sort((a, b) => a.race - b.race);
-
-                document.getElementById("header").innerText = data.title;
-                printList();
-            } else {
-                document.getElementById("header").innerText = data.title;
-                printList();
-            }
-        })
-        .catch(error => console.error('Error:', error));
-    }
-
-    function printList() {
-        // Clear the table first
-        let outputTable = document.getElementById("output");
-        let wanted_club = document.getElementById("wantedClubInput").value;
-        let wanted_athlete = document.getElementById("wantedAthleteInput").value;
-        let distance_set = new Set();
-        for(let i = outputTable.rows.length - 1; i > 0; i--)
-        {
-            outputTable.deleteRow(i);
-        }
-
-        if (allData.length == 0) {
-            let row = outputTable.insertRow(-1);
-            row.insertCell(0).innerText = "INGA LOPP"
-        }
-
-        for (let data of allData) {
-            let club = data.club;
-            let name = data.name;
-            if (club && club.includes(wanted_club) && name.includes(wanted_athlete)) {
-                // Create a new row
-                let row = outputTable.insertRow(-1);
-                // Insert cells and add the text
-                row.insertCell(0).innerHTML = '<a href="https://se.racemanager.net/results/competition/result/heat/' + data.race_id + '" target="_blank">' + data.race + '</a>';
-                row.insertCell(1).innerText = data.day;
-                row.insertCell(2).innerText = data.time;
-                row.insertCell(3).innerHTML = '<div style="text-align:center">' + data.lane + '</div>';
-                row.insertCell(4).innerText = data.name;
-                row.insertCell(5).innerText = data.distance;
-                row.insertCell(6).innerText = data.title;
-                row.insertCell(7).innerText = data.result;
-                distance_set.add(data.distance);
-            } else if (club == null && distance_set.has(data.distance)) {
-                // Create a new row
-                let row = outputTable.insertRow(-1);
-                // Insert cells and add the text
-                row.insertCell(0).innerHTML = '<a href="https://se.racemanager.net/results/competition/result/heat/' + data.race_id + '" target="_blank">' + data.race + '</a>';
-                row.insertCell(1).innerText = data.day;
-                row.insertCell(2).innerText = data.time;
-                row.insertCell(3).innerText = "";
-                row.insertCell(4).innerText = data.name;
-                row.insertCell(5).innerText = data.distance;
-                row.insertCell(6).innerText = data.title;
-                row.insertCell(7).innerText = data.result;
             }
 
-        }   
-    }
+        }
+
+        function printList() {
+            // Clear the table first
+            let outputTable = document.getElementById("output");
+            let wanted_club = document.getElementById("wantedClubInput").value;
+            let wanted_athlete = document.getElementById("wantedAthleteInput").value;
+            let distance_set = new Set();
+            for (let i = outputTable.rows.length - 1; i > 0; i--) {
+                outputTable.deleteRow(i);
+            }
+
+            if (allData.length == 0) {
+                let row = outputTable.insertRow(-1);
+                row.insertCell(0).innerText = "INGA LOPP"
+            }
+
+            for (let data of allData) {
+                let club = data.club;
+                let name = data.name;
+                if (club && club.includes(wanted_club) && name.includes(wanted_athlete)) {
+                    // Create a new row
+                    let row = outputTable.insertRow(-1);
+                    // Insert cells and add the text
+                    row.insertCell(0).innerHTML = '<a href="https://se.racemanager.net/results/competition/result/heat/' + data.race_id + '" target="_blank">' + data.race + '</a>';
+                    row.insertCell(1).innerText = data.day;
+                    row.insertCell(2).innerText = data.time;
+                    row.insertCell(3).innerHTML = '<div style="text-align:center">' + data.lane + '</div>';
+                    row.insertCell(4).innerText = data.name;
+                    row.insertCell(5).innerText = data.distance;
+                    row.insertCell(6).innerText = data.title;
+                    row.insertCell(7).innerText = data.result;
+                    distance_set.add(data.distance);
+                } else if (club == null && distance_set.has(data.distance)) {
+                    // Create a new row
+                    let row = outputTable.insertRow(-1);
+                    // Insert cells and add the text
+                    row.insertCell(0).innerHTML = '<a href="https://se.racemanager.net/results/competition/result/heat/' + data.race_id + '" target="_blank">' + data.race + '</a>';
+                    row.insertCell(1).innerText = data.day;
+                    row.insertCell(2).innerText = data.time;
+                    row.insertCell(3).innerText = "";
+                    row.insertCell(4).innerText = data.name;
+                    row.insertCell(5).innerText = data.distance;
+                    row.insertCell(6).innerText = data.title;
+                    row.insertCell(7).innerText = data.result;
+                }
+
+            }
+            document.getElementById("header").innerText = allRaces[0].competition;
+        }
     </script>
 
 </body>
+
 </html>
