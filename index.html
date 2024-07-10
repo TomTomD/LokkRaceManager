@@ -42,8 +42,10 @@
     </select>
     <input type="text" id="competitionNameInput" name="competitionNameInput" hidden="True">
     <button onclick="fetchData()">Hämta</button> Laddar ner hela tävlingen.
-    <p><button onclick="updateFetchData()">Hämta lite</button> Hämtar de 20 lopp räknat från det sista lopp som är markerat som klart. </p>
- 
+    <div id="partialFetchDiv" hidden="True">
+        <p><button onclick="updateFetchData(20)" id="fetch20button">Hämta lite</button> Hämtar de 20 lopp räknat från det sista lopp som är markerat som klart. </p>
+        <p><button onclick="updateFetchData(1000)" id="fetchTheRestButton">Uppdatera</button> Hämtar alla lopp som inte är markerade som klara. </p>
+    </div>
     <h2 id="header">Ingen tävling hämtad</h2>
 
 
@@ -53,9 +55,12 @@
             <th>Atlet</th>
         </tr>
         <tr>
-            <td><input type="text" id="wantedClubInput" name="wantedClubInput" value="Lödde"></td>
-            <td><input type="text" id="wantedAthleteInput" name="wantedAthleteInput" value=""></td>
+            <td><input type="text" id="wantedClubInput" name="wantedClubInput" value="Lödde" onchange="printList()"></td>
+            <td><input type="text" id="wantedAthleteInput" name="wantedAthleteInput" value="" onchange="printList()"></td>
             <td><button onclick="printList()">Filtrera</button></td>
+        </tr>
+        <tr>
+            <td><input type="checkbox" id="showUnfinishedCheckbox" onclick="printList()"/> <label for="showUnfinishedCheckbox">Dölj färdiga lopp</label></td>
         </tr>
     </table>
 
@@ -87,27 +92,26 @@
 
         }
 
-        function updateFetchData() {
+        async function updateFetchData(updateCount) {
             let updatedRaces = 0;
             for (const [index, race_data] of allRaces.entries()) {
                 if ((race_data.status.toLowerCase() != "official") &&
                     (race_data.status.toLowerCase() != "norace")) {
                     document.getElementById("header").innerText = "Hämtar lopp " + race_data.race;
                     const race_url = "https://se.racemanager.net/api/page/" + race_data.raceID;
-                    fetch(race_url)
+                    await fetch(race_url)
                         .then(response => response.json())
-                        .then(async new_race_data => {
+                        .then(new_race_data => {
                             allRaces[index] = new_race_data;
                         })
                         .catch(error => console.error('Error:', error));
                     updatedRaces++;
-                    if(updatedRaces > 20) {
+                    if(updatedRaces > updateCount) {
                         break;
                     }
-
                 }
             }
-            
+                        
             allRacesToAllData();
             printList();
             localStorage.setItem("allRaces", JSON.stringify(allRaces));
@@ -195,6 +199,7 @@
                                     name: athlete.firstName + " " + athlete.lastName,
                                     distance: race_data.distance,
                                     title: race_data.title,
+                                    status: race_data.status,
                                     result: result_string
                                 });
                             }
@@ -213,6 +218,7 @@
                                 name: lane.name.firstName + " " + lane.name.lastName,
                                 distance: race_data.distance,
                                 title: race_data.title,
+                                status: race_data.status,
                                 result: result_string
                             });
                         }
@@ -230,6 +236,7 @@
                         title: race_data.title,
                         name: "---",
                         club: null,
+                        status: race_data.status,
                         result: "",
                     });
                 }
@@ -243,6 +250,7 @@
             let outputTable = document.getElementById("output");
             let wanted_club = document.getElementById("wantedClubInput").value;
             let wanted_athlete = document.getElementById("wantedAthleteInput").value;
+            let hide_official_race = document.getElementById("showUnfinishedCheckbox").checked;
             let distance_set = new Set();
             for (let i = outputTable.rows.length - 1; i > 0; i--) {
                 outputTable.deleteRow(i);
@@ -251,11 +259,18 @@
             if (allData.length == 0) {
                 let row = outputTable.insertRow(-1);
                 row.insertCell(0).innerText = "INGA LOPP"
+                document.getElementById("partialFetchDiv").setAttribute("hidden", "True");
+            } else {
+                document.getElementById("partialFetchDiv").removeAttribute("hidden");
             }
 
             for (let data of allData) {
                 let club = data.club;
                 let name = data.name;
+                let race_is_official = data.status.toLowerCase() == "official";
+                if (hide_official_race && race_is_official) {
+                    continue;
+                }
                 if (club && club.includes(wanted_club) && name.includes(wanted_athlete)) {
                     // Create a new row
                     let row = outputTable.insertRow(-1);
