@@ -95,7 +95,8 @@
         async function updateFetchData(updateCount) {
             let updatedRaces = 0;
             for (const [index, race_data] of allRaces.entries()) {
-                if ((race_data.status.toLowerCase() != "official") &&
+                if ( race_data.status &&
+                    (race_data.status.toLowerCase() != "official") &&
                     (race_data.status.toLowerCase() != "norace")) {
                     document.getElementById("header").innerText = "Hämtar lopp " + race_data.race;
                     const race_url = "https://se.racemanager.net/api/page/" + race_data.raceID;
@@ -224,7 +225,7 @@
                         }
                         position++;
                     }
-                } else if (race_data.status.toLowerCase() != "norace") {
+                } else if (race_data.status && race_data.status.toLowerCase() != "norace") {
                     // Probably a final not set yet.
                     allData.push({
                         time: race_data.time,
@@ -262,6 +263,9 @@
                 document.getElementById("partialFetchDiv").setAttribute("hidden", "True");
             } else {
                 document.getElementById("partialFetchDiv").removeAttribute("hidden");
+                if (allRaces[0].competition) {
+                   document.getElementById("header").innerText = allRaces[0].competition;
+                }
             }
 
             for (let data of allData) {
@@ -297,9 +301,7 @@
                     row.insertCell(6).innerText = data.title;
                     row.insertCell(7).innerText = data.result;
                 }
-
-            }
-            document.getElementById("header").innerText = allRaces[0].competition;
+            }           
         }
     </script>
 
